@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 require('./src/supabase'); // initialises the Supabase client (exits if env vars are missing)
+const swaggerUi = require('swagger-ui-express');
+const openapi = require('./openapi.json');
 const authRoutes = require('./src/routes/auth');
 const publicRoutes = require('./src/routes/public');
 const protectedRoutes = require('./src/routes/protected');
@@ -8,6 +10,7 @@ const protectedRoutes = require('./src/routes/protected');
 const app = express();
 app.use(express.json());
 
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapi));
 app.use('/auth', authRoutes);
 app.use('/public', publicRoutes);
 app.use('/protected', protectedRoutes);
@@ -27,4 +30,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log('Server running and connected to Supabase');
   console.log(`Listening on http://localhost:${PORT}`);
+  console.log(`API docs at http://localhost:${PORT}/docs`);
 });
