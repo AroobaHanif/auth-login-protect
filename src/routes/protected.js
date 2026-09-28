@@ -1,26 +1,17 @@
 const express = require('express');
-const supabase = require('../supabase');
+const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
 
-// GET /protected/profile
-router.get('/profile', async (req, res) => {
-  const header = req.headers.authorization || '';
-  const match = header.match(/^Bearer\s+(\S+)$/i);
+// GET /protected/profile - route logic only runs after requireAuth has verified the token
+router.get('/profile', requireAuth, (req, res) => {
+  const { id, email, created_at } = req.user;
+  res.status(200).json({ id, email, created_at });
+});
 
-  if (!match) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
-
-  const token = match[1];
-  const { data, error } = await supabase.auth.getUser(token);
-
-  if (error || !data.user) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
-  }
-
-  const { id, email, created_at } = data.user;
-  return res.status(200).json({ id, email, created_at });
+// GET /protected/dashboard - second protected route reusing the same middleware
+router.get('/dashboard', requireAuth, (req, res) => {
+  res.status(200).json({ message: `Welcome back, ${req.user.email}!` });
 });
 
 module.exports = router;

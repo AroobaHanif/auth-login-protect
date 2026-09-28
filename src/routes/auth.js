@@ -1,5 +1,6 @@
 const express = require('express');
 const supabase = require('../supabase');
+const requireAuth = require('../middleware/requireAuth');
 
 const router = express.Router();
 
@@ -43,6 +44,25 @@ router.post('/login', async (req, res) => {
 
   const { access_token, refresh_token, token_type, expires_in } = data.session;
   return res.status(200).json({ access_token, refresh_token, token_type, expires_in });
+});
+
+// POST /auth/logout (protected)
+// supabase-js v2's auth.signOut() only clears a session stored in the client, and this server stores none.
+// To actually revoke the user's session we call Supabase's logout endpoint with the user's own token.
+router.post('/logout', requireAuth, async (req, res) => {
+  const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/logout`, {
+    method: 'POST',
+    headers: {
+      apikey: process.env.SUPABASE_KEY,
+      Authorization: `Bearer ${req.token}`,
+    },
+  });
+
+  if (!response.ok) {
+    return res.status(response.status >= 500 ? 503 : 401).json({ error: 'Logout failed' });
+  }
+
+  return res.status(204).send();
 });
 
 module.exports = router;
